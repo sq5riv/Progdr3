@@ -30,23 +30,27 @@ class worker(object):
         self.set_lr(left, right)
         self.set_col(r,g,b)
         #start main loop
+        n = 0
         while self.boss.wego():
             try:
                 self.aaa_loop()
             except IOError:
-                print('Błąd Kaltki - Reset przechwytywania')
-                self.reset_cap()
-            
+                print('''Błąd Kaltki - Reset przechwytywania nr: %s
+                camera off'''%n)
+                self.cap.release()
+                n += 1
             
             
         
     def aaa_loop(self):
         '''main loop of object'''
 
-        print('wait  for camera if too long restart computer')
+        #print('wait  for camera if too long restart computer')
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         print('camera on')
-        print('If there is no image, check lightsource or restart program')
+        ret, self.frame = self.cap.retrieve()
+        if ret == False: raise IOError('no frame')
+        else: print('Camera ok,  if there is no image, check lightsource')
         #cap.set(cv2.CAP_PROP_FRAME_WIDTH, 768)
         #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 576)
         
@@ -62,7 +66,7 @@ class worker(object):
 
             self.x, self.y, self.z = self.frame.shape
             #print(self.x, self.y, self.z, ret)
-            if ret == False: raise IOError('no frame')            
+            
             self.horizonal = int(self.x/2)
             self.center_x = int(self.y/2)
             #print(self.frame[self.center_x][self.horizonal])
@@ -125,11 +129,6 @@ class worker(object):
         '''ads horizontal line to frame'''
         
         np.put(self.frame, [range(self.y*y*3,self.y*(y+1)*3)], self.color)
-
-    def reset_cap(self):
-        '''resets cap if it does not work fine'''
-
-        self.cap.release()
         
 
         
