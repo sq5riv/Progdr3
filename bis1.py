@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import time
 
 
 __version__ = '0.2'
@@ -29,26 +30,39 @@ class worker(object):
         self.set_lr(left, right)
         self.set_col(r,g,b)
         #start main loop
-        self.aaa_loop()
-
+        while self.boss.wego():
+            try:
+                self.aaa_loop()
+            except IOError:
+                print('Błąd Kaltki - Reset przechwytywania')
+                self.reset_cap()
+            
+            
+            
         
     def aaa_loop(self):
         '''main loop of object'''
 
         print('wait  for camera if too long restart computer')
-        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         print('camera on')
         print('If there is no image, check lightsource or restart program')
         #cap.set(cv2.CAP_PROP_FRAME_WIDTH, 768)
         #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 576)
         
         #while(cap.isOpened()):
+        i = 0
         while(self.boss.wego()):
             #a = False
-            #print('in1')
-            ret, self.frame = cap.read()
+            #if i <=10:
+            #print('in1', i)
+            i+=1
+            #ret, self.frame = cap.read() retrieve
+            ret, self.frame = self.cap.retrieve()
+
             self.x, self.y, self.z = self.frame.shape
-            #print(self.x, self.y)
+            #print(self.x, self.y, self.z, ret)
+            if ret == False: raise IOError('no frame')            
             self.horizonal = int(self.x/2)
             self.center_x = int(self.y/2)
             #print(self.frame[self.center_x][self.horizonal])
@@ -58,8 +72,8 @@ class worker(object):
                 #self.find_lr()            
                 
             #print(type(self.boss.show_r()))
-            self.boss.update_left(self.boss.show_l())
-            self.boss.update_right(self.boss.show_r())
+                self.boss.update_left(self.boss.show_l())
+                self.boss.update_right(self.boss.show_r())
             
             self.horizontal_adder(self.horizonal)
             l, r = self.boss.show_me()
@@ -77,7 +91,7 @@ class worker(object):
                 break
 
         
-        cap.release()
+        self.cap.release()
         cv2.destroyAllWindows()
 
     def find_lr(self):
@@ -111,6 +125,12 @@ class worker(object):
         '''ads horizontal line to frame'''
         
         np.put(self.frame, [range(self.y*y*3,self.y*(y+1)*3)], self.color)
+
+    def reset_cap(self):
+        '''resets cap if it does not work fine'''
+
+        self.cap.release()
+        
 
         
     def set_lr(self, left, right):
