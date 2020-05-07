@@ -353,13 +353,17 @@ class save_film(object):
 		
 		
 		fourcc = cv2.VideoWriter_fourcc(*'XVID')
-		out = cv2.VideoWriter(save_file,fourcc,30.0,(768,576))
+		w = pipeline.show_data('width')
+		h = pipeline.show_data('height')
+		out = cv2.VideoWriter(save_file,fourcc,30.0,(w,h))
+		i = 0
 		
-		while frame_source.cio() and pipeline.show_data():
+		while frame_source.cio() and pipeline.show_data('num_to_save')>i:
 			try:
-				d = overframe_like_class(frame_source.show(), pipeline)
-				frame = d.show()
+				frame = frame_source.show()
+				#print(i, frame.shape)
 				out.write(frame)
+				i+=1
 			except ValueError:
 				break
 			
@@ -383,10 +387,11 @@ class pipeline(object):
 		#info for live actions:
 		self.GO = True
 		#info for filmin
-		self.source = 'greentest.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
+		self.source = 'None' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
+		self.num_to_save = 500
 		#frame shape
-		width = 0
-		height = 0
+		self.width = 0
+		self.height = 0
 		
 	def set_data(self, **kwargs):
 		'''sets data in pipeline'''
@@ -416,13 +421,9 @@ if __name__=='__main__':
 	b = filmin(c)
 	print('filmin ok')	
 	d = [bright_frame, bis_frame]
-	play_film(d,c,b)
-	#d=takeliner(line_catcher(bright_frame(b.show(),c).show(),c),c)
-	#print(d.show_c())
-	#play_film(bis_frame, c, b)
-	print(c.brightner)
-	print('ende')
-	#save_film(bis_frame,c,b,'ende.avi')
+	#play_film(d,c,b)
+	
+	save_film(bis_frame,c,b,'ende.avi')
 	#v = [bis_frame]
 	#cap = cv2.VideoCapture('greentest.avi')
 	#mod_clip('greentest.avi', filmin, b2, *v)
