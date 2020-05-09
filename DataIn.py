@@ -36,6 +36,7 @@ class filmin(object):
 			elif color == 2: sh.update({'color':'red'})
 			elif color == 0: sh.update({'color':'blue'})
 			self.pipeline.set_data(**sh)
+			self.pipeline.set_frame()
 			
 	
 	def check2(self):
@@ -65,7 +66,7 @@ class filmin(object):
 		'''starts Videocapture and check it'''
 		
 		if self.source == 'None':
-			self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+			self.cap = cv2.VideoCapture(0)#, cv2.CAP_DSHOW)
 		else: 
 			self.cap = cv2.VideoCapture(self.source)
 		
@@ -119,32 +120,22 @@ class bright_frame(overframe):
 	def check(self):
 		'''checks pipeline for needed values'''
 		
+		
 		self.go = self.pipeline.show_data('bright_on')
 		self.color = self.pipeline.show_data('color')
 		self.brightner = self.pipeline.show_data('brightner')
 		self.width = self.pipeline.show_data('width')
 		self.height = self.pipeline.show_data('height')
-		if self.color == 'green': self.color = 1
-		elif self.color == 'red': self.color = 2
-		elif self.color == 'blue': self.color = 0
+		self.frame2 = self.pipeline.show_data('frame_mask')
 		
 	def modyficator(self):
 		'''makes one color brights than others'''
 		
 		if self.go == 'on':
 			
-			st = time.time()
-			self.frame = self.frame*self.brightner
-			#rng = range(self.color,int(self.width*self.height*3),3)
-			#dat = np.take(self.frame, rng)
-			#dat = dat*self.brightner
-			#np.put(self.frame,rng,dat)
-			print(time.time()-st)
-			
-					
-			
-			
-			
+			print(type(self.frame),type(self.frame2))
+			self.frame = cv2.multiply(self.frame,self.frame2)
+						
 class bis_frame(overframe):
 	
 	def check(self):
@@ -246,21 +237,23 @@ class mod_clip(overframe):
 		'''checks for list of modifications'''
 		
 		self.lom = self.pipeline.show_data('lom')
+
 	
-	
-	def modifier(self):
+	def modyficator(self):
 		'''makes all modifies'''
 			
 		self.loo = []
-		p = filmin(source)
-		self.loo.append(val[0](p.show(), pipeline))
+		self.loo.append(self.frame.show())
+		
 		for num in range(len(self.lom)-1):
-			self.loo.append(self.lom[num+1](self.loo[-1].show(),pipeline))
+			mod = getattr(self.lom[num](self.loo[-1],self.pipeline), 'show')
+			self.loo.append(mod())
+			
 	
 	def show(self):
 		'''shows modified frame'''
 		
-		return self.loo[-1].show()	
+		return self.loo[-1]
 
 class takeliner(object):
 	'''class made do organice all cuts.'''
@@ -320,23 +313,17 @@ class xy_liner(overliner):
 class play_film(object):
 	'''plays film'''
 	
-	def __init__(self, overframe_like_class_list, pipeline, frame_source):
+	def __init__(self, frame_source, pipeline):
 		'''inits frame'''
 		
 		cv2.namedWindow('frame',cv2.WINDOW_NORMAL)
 		cv2.resizeWindow('frame', 800,800)
 		
-		while frame_source.cio() and pipeline.show_data('GO'):
+		while pipeline.show_data('GO'):
 			
 			try:
-				frame=frame_source.show()
-				for i in overframe_like_class_list:
-					obj = i(frame,pipeline)
-					frame = obj.show()
+				frame = frame_source.show()
 				
-				#d = overframe_like_class(frame_source.show(), pipeline)
-				#frame = d.show()
-				#print(frame.shape)
 				cv2.imshow('frame',frame)
 				if cv2.waitKey(1) & 0xFF == ord('q'):
 					break
@@ -382,12 +369,13 @@ class pipeline(object):
 		self.color = 'no' #'red','green'
 		self.brightner = 0
 		self.bright_on = 'on' #'on'/'off'
+		self.frame_mask = 'no'
 		#list of modifications
 		self.lom = []
 		#info for live actions:
 		self.GO = True
 		#info for filmin
-		self.source = 'None' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
+		self.source = 'greentest.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
 		self.num_to_save = 500
 		#frame shape
 		self.width = 0
@@ -398,6 +386,20 @@ class pipeline(object):
 		
 		for k,v in kwargs.items():
 			setattr(self, k,v)
+	
+	def set_frame(self):
+		'''sets mask frame to brightner'''
+		
+		if self.color == 'green': color = 1
+		elif self.color == 'red': color = 2
+		elif self.color == 'blue': color = 0
+		a = np.uint8(1)
+		p = np.uint8(self.brightner)
+		lst = [a,a]
+		lst.insert(color,p)
+		lst = lst*self.width*self.height
+		buff = np.array(lst)
+		self.frame_mask = np.ndarray(shape=(self.height,self.width,3), dtype=np.uint8, buffer=buff)
 				
 	def show_data(self, val):
 		'''returns other types of data for other whos'''
@@ -417,23 +419,18 @@ if __name__=='__main__':
 #napisać fuzy phaser2
 
 	c = pipeline()
+	lom = [bright_frame,bis_frame]
+	c.lom = lom
 	print('pipeline ok')
 	b = filmin(c)
 	print('filmin ok')	
-	d = [bright_frame, bis_frame]
-	#play_film(d,c,b)
+	#d = mod_clip(b,c)
+	#d = bright_frame(b.show(),c)
+	#e = bis_frame(b.show(),c)
 	
-	save_film(bis_frame,c,b,'ende.avi')
-	#v = [bis_frame]
-	#cap = cv2.VideoCapture('greentest.avi')
-	#mod_clip('greentest.avi', filmin, b2, *v)
-	#print(b2.show_data('color'))
-	#c = bright_frame(b.give_frame(),b2)
+	play_film(b,c)
 	
 	
 	
 	
-
-	#print(b2.brightner)
-	#cv2.imwrite('frame.jpg',d.show())
-	#time.sleep(30)
+	
