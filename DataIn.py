@@ -2,6 +2,9 @@ import cv2
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import threading
+from pipeline import pipeline as pipeline
+from scipy import signal
 
 class filmin(object):
 	'''Klasa pobieraków danych'''
@@ -30,13 +33,13 @@ class filmin(object):
 			
 			sm = np.sum(np.sum(frame, 0),0)
 			color = np.argmax(sm)
-			valmax = np.max(sm)
-			sh.update({'brightner':331361280/valmax/6.21}) #6.21 dobrane doświadczalnie.
+			valmax = np.max(sm)/height/width/15 #dobrane doświadczalnie 
+			sh.update({'brightner':valmax}) 
 			if color == 1: sh.update({'color':'green'})
 			elif color == 2: sh.update({'color':'red'})
 			elif color == 0: sh.update({'color':'blue'})
 			self.pipeline.set_data(**sh)
-			self.pipeline.set_frame()
+			self.pipeline.set_mask()
 			
 	
 	def check2(self):
@@ -71,6 +74,7 @@ class filmin(object):
 			self.cap = cv2.VideoCapture(self.source)
 		
 		self.check()
+		self.stp()
 		
 		
 	def rstart(self):
@@ -87,26 +91,50 @@ class filmin(object):
 			return frame
 		else: raise ValueError("No more frames")
 
+	def stp(self):
+		'''sets frame in pipeline'''
+		
+		if self.cap.isOpened():
+			ret, frame = self.cap.read()
+			if ret == False: 
+				d = {'GO':False}
+				self.pipeline.set_data(**d) 
+				raise ValueError('End of frames')
+			d = {'frame':frame}
+			self.pipeline.set_data(**d)
+		else: 
+			self.pipeline.set_data({'GO':False}) 
+			raise ValueError("No more frames")
+		
 class overframe(object):
 	'''Klasa matka klatek z przeróbkami'''
 	
-	def __init__(self, frame, pipeline):
+	def __init__(self, pipeline):
 		'''init makes all things with taken frame'''
 		
 		self.pipeline = pipeline
-		self.frame = frame
-		self.check()
-		self.modyficator()
+		#self.frame = self.pipeline.show_data('frame')
+		#self.check()
+		#self.modyficator()
+		#self.run()
 	
 	def check(self):
 		'''checks what its need'''
 		
 		pass
 	
-	def modificator(self):
+	def modyficator(self):
 		'''modifies frame with data from pipeline'''
 		
 		pass
+			
+	def run(self):
+		'''runs object'''
+		
+		self.frame = self.pipeline.show_data('frame')
+		self.check()
+		self.modyficator()
+		
 		
 	def show(self):
 		'''returns modified frame'''
@@ -122,10 +150,7 @@ class bright_frame(overframe):
 		
 		
 		self.go = self.pipeline.show_data('bright_on')
-		self.color = self.pipeline.show_data('color')
 		self.brightner = self.pipeline.show_data('brightner')
-		self.width = self.pipeline.show_data('width')
-		self.height = self.pipeline.show_data('height')
 		self.frame2 = self.pipeline.show_data('frame_mask')
 		
 	def modyficator(self):
@@ -133,9 +158,9 @@ class bright_frame(overframe):
 		
 		if self.go == 'on':
 			
-			print(type(self.frame),type(self.frame2))
 			self.frame = cv2.multiply(self.frame,self.frame2)
-						
+			self.pipeline.set_frame(self.frame)
+								
 class bis_frame(overframe):
 	
 	def check(self):
@@ -195,7 +220,7 @@ class line_catcher(overframe):
 		dev = abs(left - right)/2
 		self.left = left - dev
 		self.right = right + dev	
-		
+		#print(self.left, self.right)
 		color = self. pipeline.show_data('color')
 		
 		if color == 'green': self.color = 1
@@ -209,12 +234,15 @@ class line_catcher(overframe):
 		self.c_line = self.taker(self.center)
 		self.l_line = self.taker(self.left)
 		self.r_line = self.taker(self.right)
+		d = {'self.c_line':self.c_line,'self.l_line':self.l_line,'self.r_line':self.r_line}
+		self.pipeline.set_data(**d)
 		
-		plt.plot(self.c_line)
-		plt.show()
+		#plt.plot(self.c_line)
+		#plt.show()
 		
 	def show(self):
 		'''shows data'''
+		
 		
 		return (self.c_line, self.l_line, self.r_line)
 		
@@ -230,46 +258,32 @@ class line_catcher(overframe):
 			plt.plot(self.c_line)
 			plt.show()'''
 
-class mod_clip(overframe):
-	'''plays film'''
-	
-	def check(self):
-		'''checks for list of modifications'''
-		
-		self.lom = self.pipeline.show_data('lom')
-
-	
-	def modyficator(self):
-		'''makes all modifies'''
-			
-		self.loo = []
-		self.loo.append(self.frame.show())
-		
-		for num in range(len(self.lom)-1):
-			mod = getattr(self.lom[num](self.loo[-1],self.pipeline), 'show')
-			self.loo.append(mod())
-			
-	
-	def show(self):
-		'''shows modified frame'''
-		
-		return self.loo[-1]
-
 class takeliner(object):
 	'''class made do organice all cuts.'''
 	
-	def __init__(self, line_catcher, pipeline):
+	def __init__(self, pipeline, line_catcher):
 		'''inits all works'''
 			
-		self.c, self.l, self.r = line_catcher.show()
+		self.pipeline = pipeline
+		self.line_catcher = line_catcher
+	
+	def run(self):
+		'''changes line fo x,y format'''
+		
+		self.line_catcher.run()
+		self.c, self.l, self.r = self.line_catcher.show()
 		self.xy_liner('c')
 		self.xy_liner('l')
 		self.xy_liner('r')
+		d = {'c_line':self.c,'l_line':self.l,'r_line':self.r}
+		self.pipeline.set_data(**d)		
 		
 	def xy_liner(self, dat):
 		'''change list of y to xy list'''
 		
-		tmp = [(x,y) for x,y in enumerate(getattr(self,dat))]
+		y = getattr(self, dat)
+		x = [x for x in range(len(y))]
+		tmp = [x,y]
 		setattr(self, dat, tmp)
 		
 	def show_c(self):
@@ -290,123 +304,172 @@ class takeliner(object):
 class overliner(object):
 	'''class over all line operations'''
 	
-	def __init__(self, line, pipeline):
+	def __init__(self, pipeline, w_line):
 		'''init'''
 		
-		self.line = line
-		self.modyficator()
+		self.pipeline = pipeline
+		self.w_line = w_line
+		
+	def check(self):
+		'''checks params in pipeline'''
+		
+		pass
+		
+	def get_line(self):
+		'''get_line'''
+		
+		self.line = getattr(self.pipeline, self.w_line).copy()
 		
 	def modyficator(self):
 		'''make modifications'''
 		
 		pass
+	
+	def run(self):
+		'''runs object with one data box'''
+		
+		self.get_line()
+		self.check()
+		self.modyficator()
+		self.set_line()
+		
+	def set_line(self):
+		'''sets line'''
+		
+		setattr(self.pipeline,self.w_line,self.line)
 		
 	def show(self):
 		'''shows line'''
 		
-class xy_liner(overliner):
-	'''changes data to xy format'''
+		pass
+		
+class cut(overliner):
+	'''cuts lines'''
 	
+	def check(self):
+		'''checks cut vals'''
+		
+		self.cut = self.pipeline.cut
+		self.len = len(self.line[1])
+			
 	def modyficator(self):
-		'''changes line''' 
-				
+		'''cuts some data'''
+		
+		tmp = [[],[]]
+		for p in range(len(self.line[1])):
+			if self.line[0][p]<self.cut[0]: continue
+			elif self.line[0][p]>self.len + self.cut[1]: continue
+			elif self.line[1][p]<self.cut[2]:continue
+			elif self.line[1][p]>self.cut[3]:continue
+			else: 
+				tmp[0].append(self.line[0][p])
+				tmp[1].append(self.line[1][p])
+		self.line = tmp
+		'''tmp = []
+		for p in self.line:
+			x, y = p
+			if x < self.cut[0]: continue
+			elif x > self.len+self.cut[1]: continue
+			elif y < self.cut[2]: continue
+			elif y > self.cut[3]: continue
+			else: tmp.append(p)
+		self.w_frame = tmp'''
+
+class smoother(overliner):
+	'''smooth line'''
+	
+	def __init__(self, pipeline, w_line):
+		'''initialization'''
+
+		self.pipeline = pipeline
+		self.w_line = w_line		
+		self.order = self.pipeline.order
+		self.Wn = self.pipeline.Wn
+		self.btype = self.pipeline.btype
+		self.cut_freq = self.pipeline.cut_freq
+		self.b, self.a = signal.bessel(self.order, self.Wn, self.btype)
+		
+	def modyficator(self):
+		'''smooth lone'''
+		
+		self.line[1] = signal.filtfilt(self.b,self.a, self.line[1], padlen=30)
+						
 class play_film(object):
 	'''plays film'''
 	
-	def __init__(self, frame_source, pipeline):
+	def __init__(self, pipeline):
 		'''inits frame'''
 		
+		self.pipeline = pipeline
+		self.get_frame()
+
+
+	def get_frame(self):
+		'''gets new frame from pipeline'''
+		
+		self.frame = self.pipeline.show_data('frame')
+	
+	def run(self):
+		'''shows image'''
+		
+		#print('in run')
 		cv2.namedWindow('frame',cv2.WINDOW_NORMAL)
 		cv2.resizeWindow('frame', 800,800)
 		
-		while pipeline.show_data('GO'):
+		while self.pipeline.show_data('GO'):
 			
 			try:
-				frame = frame_source.show()
-				
-				cv2.imshow('frame',frame)
+				cv2.imshow('frame',self.frame)
 				if cv2.waitKey(1) & 0xFF == ord('q'):
 					break
 			except ValueError:
 				print('nmf')
-				break
-		b.end()			
-	
+				break		
+				
+	def start(self):
+		'''starts work of object'''
+		threading.Thread(target=self.run).start()
+		
 class save_film(object):
 	'''class to save film'''
 	
-	def __init__(self, overframe_like_class, pipeline, frame_source, save_file):
+	def __init__(self, pipeline):
 		'''saves frame by frame to file'''
 		
 		
+		self.pipeline = pipeline
 		fourcc = cv2.VideoWriter_fourcc(*'XVID')
-		w = pipeline.show_data('width')
-		h = pipeline.show_data('height')
-		out = cv2.VideoWriter(save_file,fourcc,30.0,(w,h))
-		i = 0
+		w = self.pipeline.show_data('width')
+		h = self.pipeline.show_data('height')
+		self.out = cv2.VideoWriter(self.pipeline.save_path,fourcc,30.0,(w,h))
 		
-		while frame_source.cio() and pipeline.show_data('num_to_save')>i:
-			try:
-				frame = frame_source.show()
-				#print(i, frame.shape)
-				out.write(frame)
-				i+=1
-			except ValueError:
-				break
-			
-		out.release()
-			
-class pipeline(object):
-	'''class to save data for modificators etc.'''
-	
-	def __init__(self):
-		'''init start all fields'''
+	def save(self):
+		'''saves one frame'''
 		
-		#bisektor
-		self.left = 250
-		self.right = 500
-		#kolor
-		self.color = 'no' #'red','green'
-		self.brightner = 0
-		self.bright_on = 'on' #'on'/'off'
-		self.frame_mask = 'no'
-		#list of modifications
-		self.lom = []
-		#info for live actions:
-		self.GO = True
-		#info for filmin
-		self.source = 'greentest.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
-		self.num_to_save = 500
-		#frame shape
-		self.width = 0
-		self.height = 0
-		
-	def set_data(self, **kwargs):
-		'''sets data in pipeline'''
-		
-		for k,v in kwargs.items():
-			setattr(self, k,v)
-	
-	def set_frame(self):
-		'''sets mask frame to brightner'''
-		
-		if self.color == 'green': color = 1
-		elif self.color == 'red': color = 2
-		elif self.color == 'blue': color = 0
-		a = np.uint8(1)
-		p = np.uint8(self.brightner)
-		lst = [a,a]
-		lst.insert(color,p)
-		lst = lst*self.width*self.height
-		buff = np.array(lst)
-		self.frame_mask = np.ndarray(shape=(self.height,self.width,3), dtype=np.uint8, buffer=buff)
+		if self.pipeline.show_data('num_to_save')>self.i: 
+				self.out.write(self.pipeline.get_frame())
 				
-	def show_data(self, val):
-		'''returns other types of data for other whos'''
+				
+				
+	def end(self):
+		'''ends work'''
+				
+		self.out.release()
+
+class switch(object):
+	'''switch frames from pipeline to pipeline'''
+	
+	def __init__(self, pip_a, pip_b):
+		'''copies frame from pipeline a to pipeline b'''
 		
-		try:
-			return getattr(self, val)
-		except NameError: ('No data')
+		self.pip_a = pip_a
+		self.pip_b = pip_b
+	
+	def doit(self):
+		'''do work'''
+		
+		self.pip_b.set_frame(self.pip_a.get_frame())
+					
 
 if __name__=='__main__':
 
@@ -418,19 +481,46 @@ if __name__=='__main__':
 #napisać fuzzy phaser
 #napisać fuzy phaser2
 
-	c = pipeline()
-	lom = [bright_frame,bis_frame]
-	c.lom = lom
+	a = pipeline()
+
 	print('pipeline ok')
-	b = filmin(c)
-	print('filmin ok')	
-	#d = mod_clip(b,c)
-	#d = bright_frame(b.show(),c)
-	#e = bis_frame(b.show(),c)
+	b = filmin(a)
+	print('filmin ok')
+	bright = bright_frame(a)
+	bis = bis_frame(a)
+	play = play_film(a)
+	tl = takeliner(a,line_catcher(a))
+	sm = smoother(a, 'c_line')
+	ct = cut(a, 'c_line')
+	msl = smoother(a, 'l_line')
+	ctl = cut(a, 'l_line')
+	smr = smoother(a, 'r_line')
+	ctr = cut(a, 'r_line')
+	#ovl = overliner(a, 'c_line')
 	
-	play_film(b,c)
-	
-	
+	for i in range(500):
+		try:
+			b.stp()
+		except: break
+		bright.run()
+		tl.run()
+		bis.run()
+		play.get_frame()
+		sm.run()
+		ct.run()
+		msl.run()
+		ctl.run()
+		smr.run()
+		ctr.run()
+		
+		
+	#print(a.c_line)	
+	plt.plot(a.c_line[0],a.c_line[1], '.')	
+	plt.plot(a.l_line[0],a.l_line[1], '.')	
+	plt.plot(a.r_line[0],a.r_line[1], '.')
+	plt.show()
+	a.GO = False	
+	b.end()
 	
 	
 	
