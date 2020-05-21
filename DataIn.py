@@ -251,7 +251,8 @@ class line_catcher(overframe):
 		
 		w = self.pipeline.show_data('width')
 		h = self.pipeline.show_data('height')
-		return np.take(self.frame, range(int(x*3+self.color),int(x*3+w*h*3+self.color),w*3))
+		tlist = list(range(int(x*3+self.color),int(x*3+w*h*3+self.color),w*3))
+		return np.take(self.frame, tlist)
 			
 		'''for i in range(768):
 			self.c_line = np.take(self.frame, range(i*3+self.color, i*3+768*574*3+self.color, 768*3))
@@ -469,11 +470,54 @@ class switch(object):
 		'''do work'''
 		
 		self.pip_b.set_frame(self.pip_a.get_frame())
-					
 
+def take_one_cut():
+    '''simpla working program to take first cut'''
+    a = pipeline()
+    print('pipeline ok')
+    b = filmin(a)
+    print('filmin ok')
+    bright = bright_frame(a)
+    bis = bis_frame(a)
+    play = play_film(a)
+    tl = takeliner(a,line_catcher(a))
+    sm = smoother(a, 'c_line')
+    ct = cut(a, 'c_line')
+    msl = smoother(a, 'l_line')
+    ctl = cut(a, 'l_line')
+    smr = smoother(a, 'r_line')
+    ctr = cut(a, 'r_line')
+    #ovl = overliner(a, 'c_line')
+	
+    for i in range(500):
+        try:
+            b.stp()
+        except: break
+        bright.run()
+        tl.run()
+        bis.run()
+        play.get_frame()
+        sm.run()
+        ct.run()
+        msl.run()
+        ctl.run()
+        smr.run()
+        ctr.run()
+		
+		
+        #print(a.c_line)	
+    plt.plot(a.c_line[0],a.c_line[1], '.')	
+    plt.plot(a.l_line[0],a.l_line[1], '.')	
+    plt.plot(a.r_line[0],a.r_line[1], '.')
+    plt.show()
+    a.GO = False	
+    b.end()
+def take_o_cut():
+                '''takes other cut'''
+                pass
 if __name__=='__main__':
-
-
+    take_one_cut()
+    
 
 #sprawdzic linechether
 #napisać plotter
@@ -481,46 +525,7 @@ if __name__=='__main__':
 #napisać fuzzy phaser
 #napisać fuzy phaser2
 
-	a = pipeline()
 
-	print('pipeline ok')
-	b = filmin(a)
-	print('filmin ok')
-	bright = bright_frame(a)
-	bis = bis_frame(a)
-	play = play_film(a)
-	tl = takeliner(a,line_catcher(a))
-	sm = smoother(a, 'c_line')
-	ct = cut(a, 'c_line')
-	msl = smoother(a, 'l_line')
-	ctl = cut(a, 'l_line')
-	smr = smoother(a, 'r_line')
-	ctr = cut(a, 'r_line')
-	#ovl = overliner(a, 'c_line')
-	
-	for i in range(500):
-		try:
-			b.stp()
-		except: break
-		bright.run()
-		tl.run()
-		bis.run()
-		play.get_frame()
-		sm.run()
-		ct.run()
-		msl.run()
-		ctl.run()
-		smr.run()
-		ctr.run()
-		
-		
-	#print(a.c_line)	
-	plt.plot(a.c_line[0],a.c_line[1], '.')	
-	plt.plot(a.l_line[0],a.l_line[1], '.')	
-	plt.plot(a.r_line[0],a.r_line[1], '.')
-	plt.show()
-	a.GO = False	
-	b.end()
 	
 	
 	
