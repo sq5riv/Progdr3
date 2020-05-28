@@ -9,6 +9,7 @@ class pipeline(object):
 		#bisektor
 		self.left = 250
 		self.right = 500
+		self.taken_width = 5
 		#kolor
 		self.color = 'no' #'red','green'
 		self.brightner = 0
@@ -94,4 +95,9 @@ class pipeline(object):
 		'''update right'''
 		
 		self.right += n
+	def test(self):
+		pass
+	def test2(self):
+		pass
+                
 

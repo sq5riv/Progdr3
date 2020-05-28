@@ -471,6 +471,10 @@ class switch(object):
 		
 		self.pip_b.set_frame(self.pip_a.get_frame())
 
+def test():
+        '''asaa'''
+        pass
+
 def take_one_cut():
     '''simpla working program to take first cut'''
     a = pipeline()
