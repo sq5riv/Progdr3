@@ -247,7 +247,57 @@ class line_catcher(overframe):
         self.c_line = np.take(self.frame, range(i*3+self.color, i*3+768*574*3+self.color, 768*3))
         plt.plot(self.c_line)
         plt.show()'''
+class line_catcher2(overframe):
+
+    def check(self):
+        '''checks left, fight and color and sets valuer for modificator'''
         
+        left = self.pipeline.show_data('left')
+        right = self.pipeline.show_data('right')
+        self.width = self.pipeline.show_data('taken_width')
+        print(type(self.frame), self.frame.shape)
+        self.Tframe = np.transpose(self.frame,(1,2,0))
+        self.center = int((left + right)/2)
+        dev = abs(left - right)/2
+        self.left = left - dev
+        self.right = right + dev	
+        #print(self.left, self.right)
+        color = self. pipeline.show_data('color')
+        
+        if color == 'green': self.color = 1
+        elif color == 'red': self.color = 2
+        elif color == 'blue': self.color = 0
+ 
+    def modyficator(self):
+        '''catches lines from frame'''
+
+        #self.c_line = np.take(self.frame, range(self.center*3+self.color, self.center*3+768*574*3+self.color, 768*3))
+        self.c_line = self.taker(self.center)
+        self.l_line = self.taker(self.left)
+        self.r_line = self.taker(self.right)
+        d = {'self.c_line':self.c_line,'self.l_line':self.l_line,'self.r_line':self.r_line}
+        self.pipeline.set_data(**d)
+        
+        #plt.plot(self.c_line)
+        #plt.show()
+        
+    def show(self):
+        '''shows data'''
+
+        return (self.c_line, self.l_line, self.r_line)
+		
+    def taker(self, x):
+        '''takes line from frame'''
+
+        #print(self.frame.shape)
+        print(self.Tframe.shape)
+        x = int(x)
+        retval = self.Tframe[x][self.color]+self.Tframe[x+1][self.color]+self.Tframe[x+2][self.color]
+        print('shape:', retval)
+        
+        
+        return retval
+       
 class takeliner(object):
     '''class made do organice all cuts.'''
     
@@ -502,10 +552,24 @@ def take_one_cut():
     a.GO = False	
     b.end()
 def take_o_cut():
-                '''takes other cut'''
-                pass
+    '''takes other cut'''
+    a = pipeline()
+    print('pipeline ok')
+    b = filmin(a)
+    print('filmin ok')
+    bright = bright_frame(a)
+    tl = takeliner(a,line_catcher2(a))
+    bright.run()
+    tl.run()
+    plt.plot(a.c_line[0],a.c_line[1], '.')	
+    plt.plot(a.l_line[0],a.l_line[1], '.')	
+    plt.plot(a.r_line[0],a.r_line[1], '.')
+    plt.show()
+    a.GO = False	
+    b.end()    
+
 if __name__=='__main__':
-    take_one_cut()
+    take_o_cut()
     
 
 #sprawdzic linechether
