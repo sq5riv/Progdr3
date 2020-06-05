@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 import cv2
 import time
 import numpy as np
@@ -255,7 +256,7 @@ class line_catcher2(overframe):
         left = self.pipeline.show_data('left')
         right = self.pipeline.show_data('right')
         self.width = self.pipeline.show_data('taken_width')
-        print(type(self.frame), self.frame.shape)
+        #print(type(self.frame), self.frame.shape)
         self.Tframe = np.transpose(self.frame,(1,2,0))
         self.center = int((left + right)/2)
         dev = abs(left - right)/2
@@ -275,7 +276,8 @@ class line_catcher2(overframe):
         self.c_line = self.taker(self.center)
         self.l_line = self.taker(self.left)
         self.r_line = self.taker(self.right)
-        d = {'self.c_line':self.c_line,'self.l_line':self.l_line,'self.r_line':self.r_line}
+        #print(self.r_line)
+        d = {'c_line':self.c_line,'l_line':self.l_line,'r_line':self.r_line}
         self.pipeline.set_data(**d)
         
         #plt.plot(self.c_line)
@@ -289,15 +291,34 @@ class line_catcher2(overframe):
     def taker(self, x):
         '''takes line from frame'''
 
-        #print(self.frame.shape)
-        print(self.Tframe.shape)
         x = int(x)
-        retval = self.Tframe[x][self.color]+self.Tframe[x+1][self.color]+self.Tframe[x+2][self.color]
-        print('shape:', retval)
-        
+        retlist = []
+        tmp = int(self.width/2)
+        for i in range(x-tmp,x+tmp):
+            retlist.append(self.Tframe[i][self.color])
+        retval = np.sum(retlist, axis = 0)
+        retval = retval/self.width
         
         return retval
-       
+
+class data_normalizer(object):
+    '''normalizes set from 0-255 to 0-1 values'''
+
+    def __init__(self, pipeline):
+
+        self.pipeline = pipeline
+        self.pipeline.c_line = self.normalizer(self.pipeline.c_line)
+        self.pipeline.l_line = self.normalizer(self.pipeline.l_line)
+        self.pipeline.r_line = self.normalizer(self.pipeline.r_line)
+
+    def normalizer(self, data):
+        '''do job'''
+        
+        retlist = []
+        for i in data:
+            retlist.append(float(i)/(-255.0)+1.0)
+        return retlist
+            
 class takeliner(object):
     '''class made do organice all cuts.'''
     
@@ -506,10 +527,25 @@ class switch(object):
         
         self.pip_b.set_frame(self.pip_a.get_frame())
         
-def test():
-    '''asaa'''
-    pass
+def line_plotter(pipeline):
+    '''plots lines in 2 d list'''
 
+    plt.plot(pipeline.c_line[0],pipeline.c_line[1],'-')
+    plt.plot(pipeline.l_line[0],pipeline.l_line[1],'-')
+    plt.plot(pipeline.r_line[0],pipeline.r_line[1],'-')
+    plt.show()
+
+def line_plotter_one(pipeline):
+    '''plots line in 1 d list'''
+
+    plt.plot(pipeline.c_line,'-', label = 'c')
+    plt.plot(pipeline.l_line,'-', label = 'l')
+    plt.plot(pipeline.r_line,'-', label = 'r')
+    plt.plot(pipeline.t_line,'-', label = 't')
+    plt.legend()
+    plt.show()
+
+    
 def take_one_cut():
     '''simpla working program to take first cut'''
     a = pipeline()
@@ -561,15 +597,36 @@ def take_o_cut():
     tl = takeliner(a,line_catcher2(a))
     bright.run()
     tl.run()
-    plt.plot(a.c_line[0],a.c_line[1], '.')	
-    plt.plot(a.l_line[0],a.l_line[1], '.')	
-    plt.plot(a.r_line[0],a.r_line[1], '.')
+    plt.plot(a.c_line[0],a.c_line[1], '-')	
+    plt.plot(a.l_line[0],a.l_line[1], '-')	
+    plt.plot(a.r_line[0],a.r_line[1], '-')
     plt.show()
     a.GO = False	
     b.end()    
 
+def no_xy_take():
+    '''takes other cut'''
+    a = pipeline()
+    print('pipeline ok')
+    b = filmin(a)
+    print('filmin ok')
+    #bright = bright_frame(a)
+    tl =line_catcher2(a)
+    #bright.run()
+    tl.run()
+    data_normalizer(a)
+    
+    plt.plot(a.c_line, '-')	
+    plt.plot(a.l_line, '-')	
+    plt.plot(a.r_line, '-')
+    plt.show()
+    a.GO = False	
+    b.end()
+    
+def do_things():
+    pass
 if __name__=='__main__':
-    take_o_cut()
+    no_xy_take()
     
 
 #sprawdzic linechether

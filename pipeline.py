@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 class pipeline(object):
     '''class to save data for modificators etc.'''
@@ -8,8 +9,8 @@ class pipeline(object):
 
         #bisektor
         self.left = 250
-        self.right = 500
-        self.taken_width = 5
+        self.right = 450
+        self.taken_width = 30
         #kolor
         self.color = 'no' #'red','green'
         self.brightner = 0
@@ -20,7 +21,7 @@ class pipeline(object):
         #info for live actions:
         self.GO = True
         #info for filmin
-        self.source = 'greentest.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
+        self.source = 'redtest1.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
         self.num_to_save = 200
         self.save_path = 'gru.avi'
         #frame shape
@@ -32,6 +33,8 @@ class pipeline(object):
         self.c_line = 0
         self.l_line = 0
         self.r_line = 0
+        self.e_line = 0 # ethalon line is line for inter frame ops.
+        self.t_line = 0 #tnorm of lines
         #reference_line
         self.ref_line = 0
         #list of maches
@@ -43,7 +46,12 @@ class pipeline(object):
         self.Wn = 0.125
         self.btype = 'low' #type of filter
         self.cut_freq = 100
+        
+    def copy_line(self):
+        '''copy c_line to e_line'''
 
+        self.e_line = copy.copy(self.l_line)
+        
     def get_frame(self):
         '''returns copy of frame'''
 
