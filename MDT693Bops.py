@@ -59,7 +59,20 @@ class xyz(object):
         z = self.patient('zvoltage?')
         
         return(x,y,z)
-    
+
+    def set(self, k, val):
+        '''sets value on some channel of piezo-controller'''
+
+        if not isinstance(val, float):
+            raise ValueError ('set function needs float')
+        if k == 'x':
+            k = 'xvoltage='
+        elif k == 'y':
+            k = 'yvoltage='
+        elif k == 'z':
+            k = 'zvoltage='
+        command = k + str(val)
+        self.inst.write(command)
     def close(self):
         '''close connection'''
 
@@ -67,6 +80,9 @@ class xyz(object):
 
 if __name__ =='__main__':
     a = xyz()
-    for i in range(1000):
-        print(i, a.state())
+    #for i in range(1000):
+    #    print(i, a.state())
+    a.set('x',50.000)
+    a.set('y',0.000)
+    a.set('z',5.101)
     a.close()

@@ -38,6 +38,7 @@ class filmin(object):
             elif color == 0: sh.update({'color':'blue'})
             self.pipeline.set_data(**sh)
             self.pipeline.set_mask()
+            
 
     def check2(self):
         '''checks all attributes of film'''#ok
@@ -300,7 +301,87 @@ class line_catcher2(overframe):
         retval = retval/self.width
         
         return retval
+    
+class line_cather_y(overframe):
+    '''takes horizontal line from interferogram, made for AI'''
 
+    def check(self):
+
+        self.y = int(self.pipeline.show_data('height')/2)
+        self.frame = np.transpose(self.frame,(0,2,1))
+        color = self. pipeline.show_data('color')
+        
+        if color == 'green': self.color = 1
+        elif color == 'red': self.color = 2
+        elif color == 'blue': self.color = 0
+            
+    def modyficator(self):
+        '''call taker'''
+
+        self.line = self.taker(self.y)
+        d = {'h_line':self.line}
+        #print(d)
+        self.pipeline.set_data(**d)
+
+
+    def show(self):
+        '''shows data'''
+
+        return self.line
+
+    def taker(self, x):
+        '''takes line from frame'''
+
+        retval = self.frame[x][self.color]
+        return retval
+
+class line_catcher_x(overframe):
+    '''takes two vertical lines to utility functions'''
+
+    def check(self):
+        '''checks left, fight and color and sets valuer for modificator'''
+        
+        left = self.pipeline.show_data('left')
+        right = self.pipeline.show_data('right')
+        self.width = self.pipeline.show_data('taken_width')
+        #print(type(self.frame), self.frame.shape)
+        self.Tframe = np.transpose(self.frame,(1,2,0))
+        self.center = int((left + right)/2)
+        dev = abs(left - right)/4
+        self.right = int(self.center + dev)
+        #print(self.left, self.right)
+        color = self. pipeline.show_data('color')
+        
+        if color == 'green': self.color = 1
+        elif color == 'red': self.color = 2
+        elif color == 'blue': self.color = 0
+
+    def modyficator(self):
+        '''catches lines from frame'''
+
+        #self.c_line = np.take(self.frame, range(self.center*3+self.color, self.center*3+768*574*3+self.color, 768*3))
+        self.AI_c_line = self.taker(self.center)
+        self.AI_r_line = self.taker(self.right)
+
+        d = {'AI_c_line':self.AI_c_line,'AI_r_line':self.AI_r_line}
+        self.pipeline.set_data(**d)
+        
+        #plt.plot(self.c_line)
+        #plt.show()
+        
+    def show(self):
+        '''shows data'''
+
+        return (self.AI_c_line, self.AI_r_line)
+		
+    def taker(self, x):
+        '''takes line from frame'''
+
+            
+        retval = self.Tframe[x][self.color]
+        
+        return retval
+    
 class data_normalizer(object):
     '''normalizes set from 0-255 to 0-1 values'''
 
@@ -455,6 +536,35 @@ class smoother(overliner):
         
         self.line[1] = signal.filtfilt(self.b,self.a, self.line[1], padlen=30)
         
+class smoother_AI(smoother):
+
+    def modyficator(self):
+        '''smooth line'''
+
+        self.line = signal.filtfilt(self.b,self.a, self.line, padlen=30)
+
+class cut_AI(overliner):
+    '''cuts data for good fotmat'''
+    
+    def __init__(self, pipeline, w_line):
+        '''initialization'''
+
+        self.pipeline = pipeline
+        self.w_line = w_line
+        self.left = self.pipeline.left
+        self.right = self.pipeline.right
+        if self.w_line == 'h_line':
+            self.cut = int(abs(self.left-self.right)/2)-10
+            self.cent = int((self.left+self.right)/2)
+        elif self.w_line == 'AI_c_line' or self.w_line == 'AI_r_line':
+            self.cut = 100
+            self.cent = int(self.pipeline.height/2)
+
+    def modyficator(self):
+        '''cuts data'''
+
+        self.line = self.line[self.cent-self.cut:self.cent+self.cut]
+        
 class play_film(object):
     '''plays film'''
     
@@ -597,6 +707,7 @@ def take_o_cut():
     tl = takeliner(a,line_catcher2(a))
     bright.run()
     tl.run()
+
     plt.plot(a.c_line[0],a.c_line[1], '-')	
     plt.plot(a.l_line[0],a.l_line[1], '-')	
     plt.plot(a.r_line[0],a.r_line[1], '-')
@@ -623,10 +734,37 @@ def no_xy_take():
     a.GO = False	
     b.end()
     
-def do_things():
-    pass
+def take_for_AI(pipeline):
+    '''takes data for AI'''
+
+    a = pipeline
+    print('pipeline ok')
+    b = filmin(a)
+    print('filmin ok')
+    tl = line_cather_y(a)
+    tl.run()
+    tp = line_catcher_x(a)
+    tp.run()
+    
+    smoother_AI(a,'h_line').run()
+    smoother_AI(a,'AI_c_line').run()
+    smoother_AI(a,'AI_r_line').run()
+    cut_AI(a,'h_line').run()
+    cut_AI(a,'AI_c_line').run()
+    cut_AI(a,'AI_r_line').run()
+    
+    
+    plt.plot(a.h_line, '-')
+    plt.plot(a.AI_c_line, '-')
+    plt.plot(a.AI_r_line, '-')
+    plt.show()
+    b.end()
+
+
 if __name__=='__main__':
-    no_xy_take()
+    #no_xy_take()
+    a = pipeline()
+    take_for_AI(a)
     
 
 #sprawdzic linechether

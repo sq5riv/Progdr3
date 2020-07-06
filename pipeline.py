@@ -8,8 +8,8 @@ class pipeline(object):
         '''init start all fields'''
 
         #bisektor
-        self.left = 250
-        self.right = 450
+        self.left = 238
+        self.right = 422
         self.taken_width = 30
         #kolor
         self.color = 'no' #'red','green'
@@ -21,7 +21,7 @@ class pipeline(object):
         #info for live actions:
         self.GO = True
         #info for filmin
-        self.source = 'redtest1.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
+        self.source = 'None' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
         self.num_to_save = 200
         self.save_path = 'gru.avi'
         #frame shape
@@ -46,6 +46,20 @@ class pipeline(object):
         self.Wn = 0.125
         self.btype = 'low' #type of filter
         self.cut_freq = 100
+        #Moduł do AI
+        self.xv = 75.00
+        self.yv = 75.00
+        self.zv = 75.00
+        self.ufx = 0
+        self.ufy = 0
+        self.ufz = 0
+        self.wmx = False
+        self.wmy = False
+        self.wmz = False
+        self.h_line = 0 #horizontal line
+        self.AI_c_line = 0 #vertical center line
+        self.AI_r_line = 0 #vertical right line
+        
         
     def copy_line(self):
         '''copy c_line to e_line'''
