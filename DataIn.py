@@ -132,7 +132,15 @@ class overframe(object):
     def show(self):
         '''returns modified frame'''
         
-        return self.frame.copy()			
+        return self.frame.copy()
+    
+class blur_frame(overframe):
+    '''Class to blurring frames'''
+
+    def modyficator(self):
+        '''blur frame by cv2.blur'''
+
+        self.frame = cv2.blur(self.frame,(5,20))
         
 class bright_frame(overframe):
     '''one color is brightend'''
@@ -349,6 +357,7 @@ class line_catcher_x(overframe):
         self.center = int((left + right)/2)
         dev = abs(left - right)/4
         self.right = int(self.center + dev)
+        self.left = int(self.center + dev/3)
         #print(self.left, self.right)
         color = self. pipeline.show_data('color')
         
@@ -362,8 +371,9 @@ class line_catcher_x(overframe):
         #self.c_line = np.take(self.frame, range(self.center*3+self.color, self.center*3+768*574*3+self.color, 768*3))
         self.AI_c_line = self.taker(self.center)
         self.AI_r_line = self.taker(self.right)
+        self.AI_l_line = self.taker(self.left)
 
-        d = {'AI_c_line':self.AI_c_line,'AI_r_line':self.AI_r_line}
+        d = {'AI_c_line':self.AI_c_line,'AI_r_line':self.AI_r_line,'AI_l_line':self.AI_l_line}
         self.pipeline.set_data(**d)
         
         #plt.plot(self.c_line)
@@ -556,7 +566,7 @@ class cut_AI(overliner):
         if self.w_line == 'h_line':
             self.cut = int(abs(self.left-self.right)/2)-10
             self.cent = int((self.left+self.right)/2)
-        elif self.w_line == 'AI_c_line' or self.w_line == 'AI_r_line':
+        elif self.w_line == 'AI_c_line' or self.w_line == 'AI_r_line' or self.w_line == 'AI_l_line':
             self.cut = 100
             self.cent = int(self.pipeline.height/2)
 
@@ -584,13 +594,15 @@ class play_film(object):
         '''shows image'''
         
         #print('in run')
-        cv2.namedWindow('frame',cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('frame', 800,800)
+        cv2.namedWindow('frame', cv2.WINDOW_AUTOSIZE)
+        #cv2.resizeWindow('frame', 800,800)
         
         while self.pipeline.show_data('GO'):
             try:
+                self.get_frame()
                 cv2.imshow('frame',self.frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
+                    self.pipeline.GO = False
                     break
             except ValueError:
                 print('nmf')
@@ -749,18 +761,23 @@ def take_for_AI(pipeline):
     smoother_AI(a,'h_line').run()
     smoother_AI(a,'AI_c_line').run()
     smoother_AI(a,'AI_r_line').run()
+    smoother_AI(a,'AI_l_line').run()
     cut_AI(a,'h_line').run()
     cut_AI(a,'AI_c_line').run()
     cut_AI(a,'AI_r_line').run()
+    cut_AI(a,'AI_l_line').run()
     
     
-    plt.plot(a.h_line, '-')
-    plt.plot(a.AI_c_line, '-')
-    plt.plot(a.AI_r_line, '-')
+    plt.plot(a.h_line, '-', label='h')
+    plt.plot(a.AI_c_line, '-', label='c')
+    plt.plot(a.AI_r_line, '-',label='r')
+    plt.plot(a.AI_l_line, '-',label='l')
+    plt.legend()
     plt.show()
     b.end()
 
 
+    
 if __name__=='__main__':
     #no_xy_take()
     a = pipeline()

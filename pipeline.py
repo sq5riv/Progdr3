@@ -8,8 +8,8 @@ class pipeline(object):
         '''init start all fields'''
 
         #bisektor
-        self.left = 238
-        self.right = 422
+        self.left = 232
+        self.right = 407
         self.taken_width = 30
         #kolor
         self.color = 'no' #'red','green'
@@ -59,6 +59,7 @@ class pipeline(object):
         self.h_line = 0 #horizontal line
         self.AI_c_line = 0 #vertical center line
         self.AI_r_line = 0 #vertical right line
+        self.AI_l_line = 0 #vertical left line
         
         
     def copy_line(self):
