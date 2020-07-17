@@ -47,12 +47,14 @@ class pipeline(object):
         self.btype = 'low' #type of filter
         self.cut_freq = 100
         #Moduł do AI
-        self.xv = 75.00
-        self.yv = 75.00
-        self.zv = 75.00
-        self.ufx = 0
-        self.ufy = 0
-        self.ufz = 0
+        self.xv = 75.00 #voltage x
+        self.yv = 75.00 #voltage y
+        self.zv = 75.00 #voltage z
+        self.next_comm = 0 #next command to do.
+        self.xh = [0]*10 #x voltage history
+        self.yh = [0]*10 #y voltage history
+        self.zh = [0]*10 #z voltage history
+        self.ufh = [0]*10 #uf history
         self.wmx = False
         self.wmy = False
         self.wmz = False

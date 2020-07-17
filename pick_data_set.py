@@ -10,11 +10,10 @@ from statistics import median
 class AI_data_pick(object):
     '''takes data and do work'''
 
-    def __init__(self):
+    def __init__(self, pipeline):
         '''Initialise all objects'''
 
-        self.pip = pipeline()
-        
+        self.pip = pipeline
         self.fin = DataIn.filmin(self.pip)
         ob_list = []
         #ob_list.append(DataIn.blur_frame(self.pip))
@@ -48,7 +47,7 @@ class AI_data_pick(object):
             self.duf = self.uf - self.ouf
             self.ox,self.oy,self.oz = self.val
             self.ouf = self.uf
-            self.save()
+            
         
     def conv(self, d):
         '''converts float to string'''
@@ -81,14 +80,44 @@ class AI_data_pick(object):
                 if tmp_u[0] == 0: continue
                 self.val = self.cont.state()
                 self.calc()
+                self.save()
+
+    def farmer_do(self):
+
+        if self.pip.GO ==False:
+            self.end()
+        else:
+            self.fin.stp()
+            for i in self.ob:
+                i.run()
+            tmp_u.append(float(self.ufunc.do()))
+            self.uf=median(tmp_u)
+            tmp_u = tmp_u[1:]
+            self.val = self.cont.dtate()
+            self.calc()
+            self.savepip()
+                         
     def save(self):
         '''saves data for file'''
 
-        
         val = self.conv(self.x)+' '+ self.conv(self.dx)+' '+self.conv(self.y)+' '+self.conv(self.dy)+' '+self.conv(self.z)+' '+self.conv(self.dz)+' '+self.conv(self.uf)+' '+self.conv(self.duf)+'\n'
         if self.duf !=0: self.f.write(val)
               
+    def savepip(self):
+        '''saves all data for pip'''
 
+        self.s2('xh', self.dx)
+        self.s2('yh', self.dy)
+        self.s2('zh', self.dz)
+        self.s2('ufh', self.duf)
+        
+    def s2(self, field, dat):
+        '''save data for '''
+
+        b = getattr(sefl.pip,field)
+        b.append(dat)
+        setattr(self.pip,field,b[1:])
+        
 if __name__ == '__main__':
     b = AI_data_pick()
     b.farmer()
