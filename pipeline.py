@@ -21,7 +21,7 @@ class pipeline(object):
         #info for live actions:
         self.GO = True
         #info for filmin
-        self.source = 'None' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
+        self.source = 'redtest1.avi' #'greentest.avi' #'redtest1.avi' #'None' #None is for camera. Or use filepath
         self.num_to_save = 200
         self.save_path = 'gru.avi'
         #frame shape
@@ -30,11 +30,11 @@ class pipeline(object):
         #frame data
         self.frame = 0
         #lines
-        self.c_line = 0
-        self.l_line = 0
-        self.r_line = 0
-        self.e_line = 0 # ethalon line is line for inter frame ops.
-        self.t_line = 0 #tnorm of lines
+        self.c_line = []
+        self.l_line = []
+        self.r_line = []
+        self.e_line = [] # ethalon line is line for inter frame ops.
+        self.t_line = [] #tnorm of lines
         #reference_line
         self.ref_line = 0
         #list of maches
@@ -62,23 +62,35 @@ class pipeline(object):
         self.AI_c_line = 0 #vertical center line
         self.AI_r_line = 0 #vertical right line
         self.AI_l_line = 0 #vertical left line
-        
+        #params for fuzzy sets
+        #self.alpha_levels = [0.05*i for i in range(20)]
+        self.alpha_levels = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+        self.starter = 100
+
         
     def copy_line(self):
         '''copy c_line to e_line'''
 
+        #self.e_line = copy.copy(self.c_line)
         self.e_line = copy.copy(self.l_line)
+        
         
     def get_frame(self):
         '''returns copy of frame'''
 
         return self.frame.copy()
 
+    def get_domain(self):
+        '''returns list of points for domain if fuzzy set'''
+        #print(len(self.c_line))
+        #print(len(self.e_line))
+        return [i  for i in range(len(self.c_line))]
+    
     def set_data(self, **kwargs):
         '''sets data in pipeline'''
 
         for k,v in kwargs.items():
-            setattr(self, k,v)
+            setattr(self, k,copy.copy(v))
 
     def set_frame(self, frame):
         '''sets frame'''

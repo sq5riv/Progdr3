@@ -21,6 +21,7 @@ class filmin(object):
             except ValueError:
                 self.rstart()
                 print('FrameError - reset')
+                
     def check(self):
         '''checks if first frame is  ok'''#ok
 
@@ -56,6 +57,7 @@ class filmin(object):
         '''returns info about cap.isOpened'''#ok
 
         return self.cap.isOpened()
+    
     def end(self):
         '''finish work'''#ok
         self.cap.release()
@@ -207,7 +209,7 @@ class bis_frame(overframe):
         np.put(self.frame, [range(int(x*3+w*3*(h2-y)),int(x*3+w*3*(h2+y)),w*3)], 255)
         np.put(self.frame, [range(int(x*3+1+w*3*(h2-y)),int(x*3+w*3*(h2+y)),w*3)], 255)
         np.put(self.frame, [range(int(x*3+2+w*3*(h2-y)),int(x*3+w*3*(h2+y)),w*3)], 255)
-         
+       
 class line_catcher(overframe):
     '''gives three lines center, left and right'''
     
@@ -392,6 +394,49 @@ class line_catcher_x(overframe):
         
         return retval
     
+class starter(overframe):
+    '''adds starter to lines'''
+
+    def  check(self):
+        
+        self.starter = self.pipeline.starter
+        starter = [255]*self.starter
+        self.d = dict()
+        try:
+            self.c_line = list(self.pipeline.c_line.copy())
+            self.c_line = starter + self.c_line
+            self.d['c_line'] = self.c_line
+        except AttributeError:
+            print('c_line error')
+        try:
+            self.l_line = list(self.pipeline.l_line.copy())
+            self.l_line = starter + self.l_line
+            self.d['l_line']=self.l_line
+        except AttributeError:
+            print('l_line error')
+        try:
+            self.r_line = list(self.pipeline.r_line.copy())
+            self.r_line = starter + self.r_line
+            self.d['r_line']=self.r_line
+        except AttributeError:
+            print('r_line error')
+        try:
+            self.e_line = list(self.pipeline.e_line.copy())
+            self.e_line = starter + self.e_line
+            self.d['e_line']=self.e_line
+        except AttributeError:
+            print('e_line error')
+        try:
+            self.t_line = list(self.pipeline.t_line.copy())
+            self.t_line = starter + self.t_line
+            self.d['t_line'] = self.t_line
+        except AttributeError:
+            print('t_line error')
+        
+    def modyficator(self):
+
+        self.pipeline.set_data(**self.d)   
+    
 class data_normalizer(object):
     '''normalizes set from 0-255 to 0-1 values'''
 
@@ -526,7 +571,14 @@ class cut(overliner):
         elif y > self.cut[3]: continue
         else: tmp.append(p)
         self.w_frame = tmp'''
-            
+
+class refliner(overliner):
+    '''copy c_line to ref_line in pipeline'''
+
+    def modyficator(self):
+
+        self.pipeline.ref_line = self.pipeline.c_line.copy()
+        
 class smoother(overliner):
     '''smooth line'''
     
