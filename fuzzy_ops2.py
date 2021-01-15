@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from math import exp
 from math import log10
+from statistics import median
+import copy
+from math import floor
 
 class fuzzy_set(object):
     '''Object contains fields and methods of fuzzy set.'''
@@ -24,6 +27,8 @@ class fuzzy_set(object):
         self._check1()
         if self.made_by_func == True:
             self._alphator()
+        else:
+            self._alpha = list(self._alpha_dict.keys())
 
     def _alphator(self):
         '''makes alphacuts from function'''
@@ -120,12 +125,17 @@ class fuzzy_set(object):
     def get_Acuts(self):
         '''returns alpha cuts'''
 
-        return self._alpha_dict#.copy()
+        return copy.deepcopy(self._alpha_dict)
 
     def get_function(self):
         '''returns input function'''
 
         return self._function
+
+    def get_symetric(self):
+        '''returns symetric variable'''
+
+        return self.symetric
     
     def comp_smoother(self, go, out):
         '''take all in and outs of alphacuts and make one alphacut'''
@@ -302,21 +312,23 @@ class fuzzy_set(object):
         '''plots alphacuts of fuzzy set'''
 
         leg = []
-        clst = ['#FF0000','#00FF00','#0000FF','#FFFF00','#FF00FF','#00FFFF']
+        clst = ['#FFFF00','#FF00FF','#00FFFF']
         col = clst.pop()
         diff = 0.002
-        for k,v in self._alpha_dict.items():
+        ad = self._alpha_dict.copy()
+        for k,v in ad.items():
 
             for i in range(int(len(v)/2)):
                 x = [v.pop(0), v.pop(0)]
                 y = [k]*2
                 plt.plot(x,y,'-', color = col )
-        leg.append(mpatches.Patch(color= col , label='Mother fuzzy set'))
+        leg.append(mpatches.Patch(color= col , label='Cent fuzzy set'))
             
         for fuzz, obj in kwargs.items():
-            col = clst.pop()
+            col = clst.pop(0)
             #print(type(obj.get_Acuts()))
-            for k,v in obj.get_Acuts().items():
+            ad2 = obj.get_Acuts().copy()
+            for k,v in ad2.items():
                 for i in range(int(len(v)/2)):
                     x = [v.pop(0),v.pop(0)]
                     y = [k+diff]*2
@@ -328,6 +340,47 @@ class fuzzy_set(object):
         plt.legend(handles=leg)
         if show == True:
             plt.show()
+
+    def symetric_alpha_is(self):
+        '''checks alphacuts. looking forward roud 0 symetry'''
+
+        retval = False
+        alphanum = len(self._alpha_dict)
+        ret = []
+        ret_dict = {}
+        for key, val in self.get_Acuts().items():
+            while 1:
+                try:
+                    a = val.pop(0)
+                    b = val.pop(0)
+                except: break
+                if a<0 and b>0:
+                    ret.append(abs(a+b))
+                    ret_dict[key] = abs(a+b)
+                else: pass
+                '''
+        points = 0
+        for i in ret:
+            if abs(i)<12:
+                points+=1
+        if points >= 0.15*len(ret):
+            retval = True
+            '''
+        
+        rv = 0
+        for a,sym in ret_dict.items():
+            if sym <20:
+                if a>0.5:rv+=1
+                else: rv+=0.1
+        retval = round(rv,1)
+        print(rv, ret_dict)
+        
+        #retval = ret_dict
+        self.symetric = retval
+        return retval
+            
+                    
+            
         
         
 """                        
@@ -458,15 +511,23 @@ def dombi(a,b,p):
 if __name__ == '__main__':
     a = [1,2,3,4,5,6,7,8,9,10]
     b =[0.1,0.2,0.3,0.5,0.9,0.9,0.5,0.3,0.2,0.1]
-    c= []
+    
+    tri = {0.1:[1,20,21,40], 0.2:[2,19,22,39],0.3:[3,18,23,38],0.4:[4,17,24,37],0.5:[5,16,25,36],0.6:[6,15,26,35],0.7:[7,14,27,34],0.8:[8,13,27,33],0.9:[9,12,28,32],1:[10,11,29,31]}
+    '''
+    c =[]
     for i in range(20):
         c.append(i*0.05+0.05)
-    print(c)
-    z = fuzzy_set(a,b,c)
-    print(z.get_Acuts())
-    q = z.fuzzy_sum(z,T_sklar, tn_param = -10.0)
-    print(q.get_Acuts())
-    w = z.fuzzy_sub(z, T_sklar, tn_param = -10.0)
-    print(w.get_Acuts())
-    dat = {'sum':q,'sub':w}
+    print(c)'''
+    z = fuzzy_set(alpha_dict=tri)
+    print('z',z.get_Acuts())
+    q = z.fuzzy_sum(z,T_min, tn_param = -10.0)
+    print('q',q.get_Acuts())
+    w = z.fuzzy_sub(z, T_min, tn_param = -10.0)
+    print('w',w.get_Acuts())
+    dat = {'sum, T_min':q,'sub, T_min':w}
+    print('w',w.get_Acuts())
+    print(w.symetric_alpha_is())
     z.plot(**dat)
+    print('w',w.get_Acuts())
+
+

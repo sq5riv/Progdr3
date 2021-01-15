@@ -393,7 +393,63 @@ class line_catcher_x(overframe):
         retval = self.Tframe[x][self.color]
         
         return retval
-    
+
+class lr_mincut(overframe):
+    '''cuts left and right lines'''
+
+    def modyficator(self):
+        self.l_line = list(self.pipeline.l_line.copy())
+        self.r_line = list(self.pipeline.r_line.copy())
+        divl= int(len(self.l_line)/2)
+        divr=int(len(self.r_line)/2)
+
+        dat = dict()
+        #dat['l_line'] = self.cut(self.l_line[:divl], 'left')+self.cut(self.l_line[divl:], 'right')
+        #dat['r_line'] = self.cut(self.r_line[:divr],'left')+self.cut(self.r_line[divr:], 'right')
+        dat['l_line'] = self.cut2(self.l_line)
+        dat['r_line'] = self.cut2(self.r_line)
+        
+        self.pipeline.set_data(**dat)
+
+    def cut(self, dat1, side):
+        '''returns line with 255 afer first max'''
+
+        ln = len(dat1)
+        #print(ln)
+        mx = int(max(dat1))
+       #print(mx)
+
+        tmpval = [255]*ln
+        if side == 'left':
+            return tmpval[:mx]+dat1[mx:]
+        elif side == 'right':
+            return dat1[:mx]+tmpval[mx:]
+        else:
+            print('left or right only')
+
+    def cut2(self, dat):
+        '''cuts all round central maximum'''
+
+        retval = []
+        pick = 0
+        taken = 3
+        inpick = False
+        for num, pix in enumerate(dat):
+            if pix != 255 and inpick == False:
+                inpick = True
+                pick+=1
+            elif pix==255 and inpick ==True:
+                inpick = False
+
+            if pick ==taken:
+                retval.append(pix)
+            else:
+                retval.append(255)
+            
+        return retval
+        
+        
+        
 class starter(overframe):
     '''adds starter to lines'''
 

@@ -23,7 +23,7 @@ class robot(object):
 
         #self.bright = di.bright_frame(self.pipeline)
         self.tl = di.line_catcher2(self.pipeline)
-        self.start = di.starter(self.pipeline)
+        #self.start = di.starter(self.pipeline)
         
     def bt_rst(self):
         '''reset read of data'''
@@ -45,7 +45,13 @@ class robot(object):
         #self.bright.run()'''
         self.filmin.stp()
         self.tl.run()
-        self.start.run()
+        #self.start.run()
+
+    def cut(self):
+        '''cuts data in left and right lines'''
+
+        self.cut = di.lr_mincut(self.pipeline)
+        self.cut.run()
         
     def dn(self):
         '''normalize data'''
@@ -68,38 +74,34 @@ class robot(object):
         plt.clf()
         self.bt_run()
         self.dn()
-        sk.sklar(self.pipeline.e_line,self.pipeline.c_line,2,self.pipeline)
-        x  = plt.plot(self.pipeline.c_line,'r-', label = 'c')
-        y = plt.plot(self.pipeline.l_line,'g-', label = 'l')
-        z = plt.plot(self.pipeline.r_line,'b-', label = 'r')
-        q = plt.plot(self.pipeline.t_line,'y-', label = 't')
+        #sk.sklar(self.pipeline.e_line,self.pipeline.c_line,2,self.pipeline)
+        retval = (
+        plt.plot(self.pipeline.c_line,'r-', label = 'c'),
+        plt.plot(self.pipeline.l_line,'g-', label = 'l'),
+        #plt.plot(self.pipeline.r_line,'b-', label = 'r'),
+        #plt.plot(self.pipeline.t_line,'y-', label = 't')
+        )
         w = plt.legend()
 
-        return(x,y,z,q,w)
+        return retval
 
-    def new_plotter(self,i,j):
+    def new_plotter(self,i):
         '''plots new fuzzy set'''
 
         plt.clf()
+        j = 0.8
         try:
             self.bt_run()
             self.dn()
-            #x = [i for i in range(len(self.pipeline.c_line))]
-            #alpha_levels = [0.1,0.3,0.5,0.8,0.9]
             c = fs(self.pipeline.get_domain(), self.pipeline.c_line, self.pipeline.alpha_levels)
-            #print(id(c.get_Acuts()))
-            #e = fs(x, self.pipeline.e_line, alpha_levels)
-            #print(id(e.get_Acuts()))
-            #e = c.fuzzy_sub(d, fop2.T_min)
-            #print(e.get_Acuts)
-           # print(i,j)
-            f = self.pipeline.e_fuzz.fuzzy_sub(c, fop2.T_my_drastic,tn_param=j)
-            name = 'sub sklar p = ' + str(j)
+            f = self.pipeline.e_fuzz.fuzzy_sub(c, fop2.T_min,tn_param=j)
+            #name = 'sub sklar p = ' + str(j)
+            sym = str(f.symetric_alpha_is())
+            name = 'sub min, symetry factor: '+ sym + '  '+ str(i)
             dat = {name:f}
             c.plot(show = False, **dat)
             plt.plot(c.get_function(), 'r-', label='c')
             plt.plot(self.pipeline.e_fuzz.get_function(), 'g-', label='e')
-            #print(kwarg)
         except: plt.close(self.fig1)
 
     def newer_plotter(self, i):
@@ -119,12 +121,12 @@ class robot(object):
             try:
                 self.j.pop(0)
             except:  plt.close(self.fig1)
-            
-        #print(i)
+
         self.dn()
         c = fs(self.pipeline.get_domain(), self.pipeline.c_line, self.pipeline.alpha_levels)
-        f = self.pipeline.e_fuzz.fuzzy_sub(c, fop2.T_yager,tn_param=loc)
-        name = 'sub yager p = ' + str(loc)
+        f = self.pipeline.e_fuzz.fuzzy_sub(c, fop2.T_sklar,tn_param=loc)
+        sym = str(f.symetric_alpha_is())
+        name = 'sub sklar p = ' + str(loc) + ' symetric score: ' + sym 
         dat = {name:f}
         c.plot(show = False, **dat)
         plt.plot(c.get_function(), 'r-', label='c')
@@ -135,10 +137,11 @@ class robot(object):
 
         self.bt()
         self.bt_run()
+        self.cut()
         self.dn()
         self.pipeline.copy_line()
-        fig1 = plt.figure()
-        ani = animation.FuncAnimation(fig1,self.plotter)
+        self.fig1 = plt.figure()
+        ani = animation.FuncAnimation(self.fig1,self.plotter)
         plt.show()
 
     def worker2(self):
@@ -146,25 +149,65 @@ class robot(object):
 
         self.bt()
         self.bt_run()
+        self.cut()
         self.dn()
         self.pipeline.copy_line()
         self.pipeline.e_fuzz = fs(self.pipeline.get_domain(), self.pipeline.e_line, self.pipeline.alpha_levels)
         self.fig1 = plt.figure()
-        ani = animation.FuncAnimation(self.fig1, self.new_plotter, fargs = (0.8,))
+        ani = animation.FuncAnimation(self.fig1, self.new_plotter)
         plt.show()
 
     def worker3(self):
         '''do other things'''
 
         self.bt()
-        self.j = [0,0.1,1]
+        self.j = [ 0 ,1, 2, 10]
         self.bt_run()
+        self.cut()
         self.dn()
         self.pipeline.copy_line()
         self.pipeline.e_fuzz = fs(self.pipeline.get_domain(), self.pipeline.e_line, self.pipeline.alpha_levels)
         self.fig1 = plt.figure()
         ani = animation.FuncAnimation(self.fig1, self.newer_plotter, interval =10)
         plt.show()
+
+    def painter1(self):
+        '''paints simple fuzzy sets'''
+
+        self.bt()
+        self.bt_run()
+        self.cut()
+        self.dn()
+        self.pipeline.copy_line()
+        self.plotter(1)
+        plt.show()
+
+    def painter2(self, i):
+        '''paints fuzzy sets with sub and propper frame of film'''
+
+
+        self.bt()
+        self.bt_run()
+        self.cut()
+        self.dn()
+        self.pipeline.copy_line()
+        self.pipeline.e_fuzz = fs(self.pipeline.get_domain(), self.pipeline.e_line, self.pipeline.alpha_levels)
+        for j in range(i-2):
+            self.bt_run()
+        self.dn()
+        c = fs(self.pipeline.get_domain(), self.pipeline.c_line, self.pipeline.alpha_levels)
+        f = self.pipeline.e_fuzz.fuzzy_sub(c, fop2.T_yager,tn_param=0.01)
+        sym = str(f.symetric_alpha_is())
+        name = 'sub T_Yag 0.01, Covering factor: '+ sym #+ '  '+ str(i)
+        dat = {name:f}
+        etal = 'etalon fuzzy set'
+        dat[etal]=self.pipeline.e_fuzz
+        c.plot(show = False, **dat)
+        plt.plot(c.get_function(), 'r-', label='c')
+        plt.plot(self.pipeline.e_fuzz.get_function(), 'g-', label='e')
+        plt.show()
+
+        
         
 def first_proc():
     '''first proces to do something'''
@@ -196,13 +239,18 @@ def multigo():
 
     a = robot()
     a.worker3()
+
+
     
 if __name__ == '__main__':
 
-    multigo()
+    onego()
+    #multigo()
     #first_proc()
 
     #a = robot()
+    #a.painter2(5)
+    #a.painter2(150)
     #a.bt()
     #a.bt_run()
     #a.line_ploter2()
